@@ -1,8 +1,12 @@
 package z.houbin.launcher;
 
+import android.app.LoaderManager;
+import android.content.AsyncTaskLoader;
+import android.content.Loader;
 import android.content.pm.PackageInfo;
-import android.os.AsyncTask;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.view.ContextMenu;
 import android.view.MenuItem;
@@ -10,17 +14,23 @@ import android.view.View;
 import android.widget.GridLayout;
 import android.widget.Toast;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import z.houbin.launcher.pkg.AppInfo;
 import z.houbin.launcher.pkg.AppManager;
+import z.houbin.launcher.screen.LauncherConfig;
 import z.houbin.launcher.ui.AppView;
 import z.houbin.launcher.ui.StatusBarTransparentActivity;
+import z.houbin.launcher.util.ACache;
+import z.houbin.launcher.util.Caches;
 
-public class AppListActivity extends StatusBarTransparentActivity {
-
+public class AppListActivity extends StatusBarTransparentActivity implements LoaderManager.LoaderCallbacks<List<AppInfo>> {
     private GridLayout gridLayout;
 
     private AppView mFocusChild;
+
+    private Handler handler = new Handler();
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -31,43 +41,8 @@ public class AppListActivity extends StatusBarTransparentActivity {
 
         gridLayout = findViewById(R.id.apps_grid);
 
-        new AsyncTask<Void, Void, List<PackageInfo>>() {
-            @Override
-            protected List<PackageInfo> doInBackground(Void... voids) {
-                return AppManager.getThirdPackage(getPackageManager());
-            }
-
-            @Override
-            protected void onPostExecute(List<PackageInfo> thirdPackage) {
-                super.onPostExecute(thirdPackage);
-                for (int i = 0; i < thirdPackage.size(); i++) {
-                    AppView appView = new AppView(getApplicationContext());
-
-                    GridLayout.Spec rowSpec = GridLayout.spec(i / 4, 1f);
-                    GridLayout.Spec columnSpec = GridLayout.spec(i % 4, 1f);
-                    //将Spec传入GridLayout.LayoutParams并设置宽高为0，必须设置宽高，否则视图异常
-                    GridLayout.LayoutParams layoutParams = new GridLayout.LayoutParams(rowSpec, columnSpec);
-                    layoutParams.height = gridLayout.getMeasuredWidth() / 4;
-                    layoutParams.width = gridLayout.getMeasuredWidth() / 4;
-
-                    PackageInfo packageInfo = thirdPackage.get(i);
-
-                    appView.setText(packageInfo.applicationInfo.loadLabel(getPackageManager()));
-                    appView.setTop(packageInfo.applicationInfo.loadIcon(getPackageManager()), 100, 100);
-                    appView.setPackageInfo(packageInfo);
-                    appView.setOnClickListener(onIconClickListener);
-                    appView.setOnLongClickListener(onIconLongClickListener);
-
-                    registerForContextMenu(appView);
-                    try {
-                        gridLayout.addView(appView, layoutParams);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-
-                }
-            }
-        }.execute();
+        getLoaderManager().initLoader(0, null, this);
+        getLoaderManager().getLoader(0).startLoading();
     }
 
     @Override
@@ -83,6 +58,8 @@ public class AppListActivity extends StatusBarTransparentActivity {
         if (mFocusChild != null) {
             switch (item.getItemId()) {
                 case 1:
+                    LauncherConfig config = new LauncherConfig(getApplicationContext());
+                    config.addToLauncher(mFocusChild.getPackageName());
                     break;
                 case 2:
                     mFocusChild.gotoDetailActivity();
@@ -99,9 +76,19 @@ public class AppListActivity extends StatusBarTransparentActivity {
     public View.OnClickListener onIconClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            AppView view = (AppView) v;
+            final AppView view = (AppView) v;
             if (!view.open()) {
                 Toast.makeText(AppListActivity.this, "打开失败", Toast.LENGTH_SHORT).show();
+                if (view.enable()) {
+                    handler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (!view.open()) {
+                                Toast.makeText(AppListActivity.this, "第二次打开失败", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    }, 2000);
+                }
             }
             mFocusChild = null;
         }
@@ -115,4 +102,68 @@ public class AppListActivity extends StatusBarTransparentActivity {
             return true;
         }
     };
+
+    @Override
+    public Loader<List<AppInfo>> onCreateLoader(int id, Bundle args) {
+        return new AsyncTaskLoader<List<AppInfo>>(getApplicationContext()) {
+            @Override
+            public List<AppInfo> loadInBackground() {
+                List<PackageInfo> thirdPackage = AppManager.getThirdPackage(getPackageManager());
+                List<AppInfo> appInfos = new ArrayList<>();
+                for (int i = 0; i < thirdPackage.size(); i++) {
+                    PackageInfo packageInfo = thirdPackage.get(i);
+                    AppInfo appInfo = new AppInfo();
+                    appInfo.setPackageInfo(packageInfo);
+                    appInfo.setEnable(AppManager.isEnable(getApplicationContext(), packageInfo.packageName));
+                    appInfo.setPackageName(packageInfo.packageName);
+                    appInfos.add(appInfo);
+                }
+                return appInfos;
+            }
+
+            @Override
+            protected void onStartLoading() {
+                forceLoad();
+            }
+        };
+    }
+
+
+    @Override
+    public void onLoadFinished(Loader<List<AppInfo>> loader, List<AppInfo> data) {
+        gridLayout.removeAllViews();
+        gridLayout.setRowCount((data.size() / 4) + 1);
+        for (int i = 0; i < data.size(); i++) {
+            AppView appView = new AppView(getApplicationContext());
+
+            GridLayout.Spec rowSpec = GridLayout.spec(i / 4, 1f);
+            GridLayout.Spec columnSpec = GridLayout.spec(i % 4, 1f);
+            //将Spec传入GridLayout.LayoutParams并设置宽高为0，必须设置宽高，否则视图异常
+            GridLayout.LayoutParams layoutParams = new GridLayout.LayoutParams(rowSpec, columnSpec);
+            layoutParams.height = gridLayout.getMeasuredWidth() / 4;
+            layoutParams.width = gridLayout.getMeasuredWidth() / 4;
+
+            AppInfo packageInfo = data.get(i);
+
+            appView.setText(packageInfo.getPackageInfo().applicationInfo.loadLabel(getPackageManager()));
+            appView.setTop(packageInfo.getPackageInfo().applicationInfo.loadIcon(getPackageManager()), 100, 100);
+            appView.setAppInfo(packageInfo);
+            appView.setOnClickListener(onIconClickListener);
+            appView.setOnLongClickListener(onIconLongClickListener);
+            appView.setEnabled(packageInfo.isEnable());
+
+            registerForContextMenu(appView);
+            try {
+                gridLayout.addView(appView, layoutParams);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+        }
+    }
+
+    @Override
+    public void onLoaderReset(Loader<List<AppInfo>> loader) {
+
+    }
 }

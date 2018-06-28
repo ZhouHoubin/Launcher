@@ -2,17 +2,20 @@ package z.houbin.launcher.ui;
 
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageInfo;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.support.v7.widget.AppCompatTextView;
 import android.view.Gravity;
 
+import z.houbin.launcher.pkg.AppInfo;
 import z.houbin.launcher.pkg.AppManager;
 
 public class AppView extends AppCompatTextView {
-    private PackageInfo packageInfo;
+    private AppInfo appInfo;
+    private int defaultTextColor = Color.BLACK;
 
     public AppView(Context context) {
         super(context);
@@ -28,28 +31,55 @@ public class AppView extends AppCompatTextView {
         setCompoundDrawables(null, drawable, null, null);
     }
 
-    public PackageInfo getPackageInfo() {
-        return packageInfo;
+    public AppInfo getAppInfo() {
+        return appInfo;
     }
 
-    public void setPackageInfo(PackageInfo packageInfo) {
-        this.packageInfo = packageInfo;
+    public void setAppInfo(AppInfo appInfo) {
+        this.appInfo = appInfo;
+    }
+
+    public void setDefaultTextColor(int defaultTextColor) {
+        this.defaultTextColor = defaultTextColor;
+        setTextColor(defaultTextColor);
     }
 
     public boolean open() {
-        if (this.packageInfo != null) {
-            return AppManager.openApp(getContext(), packageInfo.packageName);
+        if (this.appInfo != null) {
+            return AppManager.openApp(getContext(), appInfo.getPackageName());
         } else {
             return false;
         }
     }
 
-    private String getPackageName() {
-        if (this.packageInfo != null) {
-            return packageInfo.packageName;
+    public boolean disable() {
+        return AppManager.disable(getPackageName());
+    }
+
+    public boolean enable() {
+        return AppManager.enable(getPackageName());
+    }
+
+    public String getPackageName() {
+        if (this.appInfo != null) {
+            return appInfo.getPackageName();
         } else {
             return null;
         }
+    }
+
+    @Override
+    public void setEnabled(boolean enabled) {
+        if (enabled) {
+            setPaintFlags(getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
+            setTextColor(defaultTextColor);
+        } else {
+            setPaintFlags(getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+            setTextColor(Color.GRAY);
+        }
+        setClickable(true);
+        setFocusable(true);
+
     }
 
     public void gotoDetailActivity() {
@@ -70,8 +100,8 @@ public class AppView extends AppCompatTextView {
     }
 
     public void uninstall() {
-        if (this.packageInfo != null) {
-            AppManager.unInstall(getContext(), packageInfo.packageName);
+        if (this.appInfo != null) {
+            AppManager.unInstall(getContext(), appInfo.getPackageName());
         }
     }
 }

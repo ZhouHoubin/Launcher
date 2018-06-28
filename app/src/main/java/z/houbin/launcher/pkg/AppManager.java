@@ -181,6 +181,12 @@ public class AppManager {
         }
     }
 
+    public static boolean isEnable(Context context, String packageName) {
+        PackageManager packageManager = context.getPackageManager();
+        Intent launchIntentForPackage = packageManager.getLaunchIntentForPackage(packageName);
+        return launchIntentForPackage != null;
+    }
+
     public static boolean isDisable(Context context, String packageName, ComponentName componentName) {
         boolean disable = false;
         try {
@@ -217,6 +223,36 @@ public class AppManager {
         try {
             Process localProcess = Runtime.getRuntime().exec("su");
             String cmd = "pm enable " + componentName.getPackageName() + "/" + componentName.getClassName() + "\n";
+            DataOutputStream dataOutputStream = new DataOutputStream(localProcess.getOutputStream());
+            dataOutputStream.writeBytes(cmd);
+            dataOutputStream.flush();
+            dataOutputStream.writeBytes("exit\n");
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public static synchronized boolean enable(String packageName) {
+        try {
+            Process localProcess = Runtime.getRuntime().exec("su");
+            String cmd = "pm enable " + packageName + "\n";
+            DataOutputStream dataOutputStream = new DataOutputStream(localProcess.getOutputStream());
+            dataOutputStream.writeBytes(cmd);
+            dataOutputStream.flush();
+            dataOutputStream.writeBytes("exit\n");
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public static synchronized boolean disable(String packageName) {
+        try {
+            Process localProcess = Runtime.getRuntime().exec("su");
+            String cmd = "pm disable " + packageName + "\n";
             DataOutputStream dataOutputStream = new DataOutputStream(localProcess.getOutputStream());
             dataOutputStream.writeBytes(cmd);
             dataOutputStream.flush();
