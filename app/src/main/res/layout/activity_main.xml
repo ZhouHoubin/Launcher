@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingTop="45dp"
+    android:paddingTop="25dp"
     tools:context=".MainActivity">
 
 
@@ -11,58 +11,59 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <GridLayout
+        <z.houbin.launcher.ui.GridLinearLayout
             android:id="@+id/main_grid"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:columnCount="4"
-            android:rowCount="2" />
+            android:orientation="horizontal" />
     </ScrollView>
 
-    <LinearLayout
+    <z.houbin.launcher.ui.GridLinearLayout
         android:id="@+id/main_bottom"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:gravity="center"
-        android:minHeight="65dp">
+        android:minHeight="65dp"
+        android:orientation="horizontal"
+        android:rowCount="1">
 
         <ImageButton
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
             android:background="@android:color/transparent"
             android:src="@mipmap/ic_launcher_default" />
 
         <ImageButton
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
             android:background="@android:color/transparent"
             android:src="@mipmap/ic_launcher_default" />
 
         <ImageButton
             android:id="@+id/main_allapps"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_row="0"
+            android:layout_column="2"
             android:background="@android:color/transparent"
             android:src="@mipmap/ic_allapps_color" />
 
         <ImageButton
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
             android:background="@android:color/transparent"
             android:src="@mipmap/ic_launcher_default" />
 
         <ImageButton
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
             android:background="@android:color/transparent"
             android:src="@mipmap/ic_launcher_default" />
-    </LinearLayout>
+    </z.houbin.launcher.ui.GridLinearLayout>
 
 </RelativeLayout>

@@ -13,15 +13,14 @@ import android.view.Gravity;
 import z.houbin.launcher.pkg.AppInfo;
 import z.houbin.launcher.pkg.AppManager;
 
-public class AppView extends AppCompatTextView {
+public class AppTextView extends AppCompatTextView implements AppHelper {
     private AppInfo appInfo;
     private int defaultTextColor = Color.BLACK;
 
-    public AppView(Context context) {
+    public AppTextView(Context context) {
         super(context);
         setGravity(Gravity.CENTER);
         setLines(1);
-        setPadding(10, 10, 10, 10);
         setClickable(true);
         setFocusable(true);
     }
@@ -29,6 +28,12 @@ public class AppView extends AppCompatTextView {
     public void setTop(Drawable drawable, int width, int height) {
         drawable.setBounds(0, 0, width, height);
         setCompoundDrawables(null, drawable, null, null);
+    }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        setPadding(getMeasuredWidth() / 10, getMeasuredWidth() / 10, getMeasuredWidth() / 10, getMeasuredWidth() / 10);
     }
 
     public AppInfo getAppInfo() {
@@ -69,6 +74,19 @@ public class AppView extends AppCompatTextView {
     }
 
     @Override
+    public boolean gotoDetail() {
+        if (getPackageName() == null) {
+            return false;
+        }
+        Intent mIntent = new Intent();
+        mIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        mIntent.setAction("android.settings.APPLICATION_DETAILS_SETTINGS");
+        mIntent.setData(Uri.fromParts("package", getPackageName(), null));
+        getContext().startActivity(mIntent);
+        return true;
+    }
+
+    @Override
     public void setEnabled(boolean enabled) {
         if (enabled) {
             setPaintFlags(getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
@@ -82,26 +100,11 @@ public class AppView extends AppCompatTextView {
 
     }
 
-    public void gotoDetailActivity() {
-        if (getPackageName() == null) {
-            return;
-        }
-        Intent mIntent = new Intent();
-        mIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        if (Build.VERSION.SDK_INT >= 9) {
-            mIntent.setAction("android.settings.APPLICATION_DETAILS_SETTINGS");
-            mIntent.setData(Uri.fromParts("package", getPackageName(), null));
-        } else if (Build.VERSION.SDK_INT <= 8) {
-            mIntent.setAction(Intent.ACTION_VIEW);
-            mIntent.setClassName("com.android.settings", "com.android.setting.InstalledAppDetails");
-            mIntent.putExtra("com.android.settings.ApplicationPkgName", getPackageName());
-        }
-        getContext().startActivity(mIntent);
-    }
 
-    public void uninstall() {
+    public boolean uninstall() {
         if (this.appInfo != null) {
             AppManager.unInstall(getContext(), appInfo.getPackageName());
         }
+        return true;
     }
 }

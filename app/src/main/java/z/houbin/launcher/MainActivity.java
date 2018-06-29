@@ -2,7 +2,9 @@ package z.houbin.launcher;
 
 import android.content.Intent;
 import android.content.pm.PackageInfo;
+import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -10,7 +12,9 @@ import android.util.DisplayMetrics;
 import android.view.ContextMenu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.GridLayout;
+import android.view.ViewGroup;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import java.util.ArrayList;
@@ -20,17 +24,19 @@ import z.houbin.launcher.pkg.AppInfo;
 import z.houbin.launcher.pkg.AppManager;
 import z.houbin.launcher.screen.Launcher;
 import z.houbin.launcher.screen.LauncherConfig;
-import z.houbin.launcher.ui.AppView;
+import z.houbin.launcher.ui.AppButtonView;
+import z.houbin.launcher.ui.AppHelper;
+import z.houbin.launcher.ui.AppTextView;
+import z.houbin.launcher.ui.GridLinearLayout;
 import z.houbin.launcher.ui.StatusBarTransparentActivity;
 import z.houbin.launcher.ui.WallpaperUtil;
 
 public class MainActivity extends StatusBarTransparentActivity implements View.OnClickListener {
-
-    private GridLayout gridLayout;
+    private GridLinearLayout gridBottom, gridMain;
 
     private Handler handler = new Handler();
 
-    private AppView mFocusChild;
+    private AppTextView mFocusChild;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,8 +52,6 @@ public class MainActivity extends StatusBarTransparentActivity implements View.O
 
         getWindow().setBackgroundDrawable(WallpaperUtil.getWallpaper(getApplicationContext(), new Launcher()));
 
-        findViewById(R.id.main_allapps).setOnClickListener(this);
-
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(Thread t, Throwable e) {
@@ -55,7 +59,8 @@ public class MainActivity extends StatusBarTransparentActivity implements View.O
             }
         });
 
-        gridLayout = findViewById(R.id.main_grid);
+        gridMain = findViewById(R.id.main_grid);
+        gridBottom = findViewById(R.id.main_bottom);
     }
 
     @Override
@@ -73,15 +78,19 @@ public class MainActivity extends StatusBarTransparentActivity implements View.O
                 case 1:
                     LauncherConfig config = new LauncherConfig(getApplicationContext());
                     config.deleteFromLauncher(mFocusChild.getPackageName());
-                    gridLayout.removeView(mFocusChild);
-                    gridLayout.invalidate();
+                    onResume();
                     mFocusChild = null;
                     break;
                 case 2:
-                    mFocusChild.gotoDetailActivity();
+                    mFocusChild.gotoDetail();
                     break;
                 case 3:
                     mFocusChild.uninstall();
+                    break;
+                case 4:
+                    break;
+                case 5:
+                    mFocusChild.gotoDetail();
                     break;
             }
         }
@@ -112,31 +121,37 @@ public class MainActivity extends StatusBarTransparentActivity implements View.O
             @Override
             protected void onPostExecute(List<AppInfo> data) {
                 super.onPostExecute(data);
-                gridLayout.removeAllViews();
-                gridLayout.setRowCount((data.size() / 4) + 1);
-                for (int i = 0; i < data.size(); i++) {
-                    AppView appView = new AppView(getApplicationContext());
+                gridMain.removeAllViews();
+                gridMain.setColumnCount(4);
 
-                    GridLayout.Spec rowSpec = GridLayout.spec(i / 4, 1f);
-                    GridLayout.Spec columnSpec = GridLayout.spec(i % 4, 1f);
-                    //将Spec传入GridLayout.LayoutParams并设置宽高为0，必须设置宽高，否则视图异常
-                    GridLayout.LayoutParams layoutParams = new GridLayout.LayoutParams(rowSpec, columnSpec);
-                    layoutParams.height = gridLayout.getMeasuredWidth() / 4;
-                    layoutParams.width = gridLayout.getMeasuredWidth() / 4;
+                int childWidth = ((ViewGroup)gridMain.getParent()).getMeasuredWidth() / gridMain.getColumnCount();
+
+                for (int i = 0; i < data.size(); i++) {
+                    AppTextView appView = new AppTextView(getApplicationContext());
+
+                    LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(gridMain.getMeasuredWidth() / gridMain.getColumnCount(), gridMain.getMeasuredWidth() / gridMain.getColumnCount());
 
                     AppInfo packageInfo = data.get(i);
 
                     appView.setText(packageInfo.getPackageInfo().applicationInfo.loadLabel(getPackageManager()));
-                    appView.setTop(packageInfo.getPackageInfo().applicationInfo.loadIcon(getPackageManager()), 100, 100);
+                    appView.setTop(packageInfo.getPackageInfo().applicationInfo.loadIcon(getPackageManager()), childWidth / 2, childWidth / 2);
                     appView.setAppInfo(packageInfo);
                     appView.setOnClickListener(onIconClickListener);
                     appView.setOnLongClickListener(onIconLongClickListener);
                     appView.setEnabled(packageInfo.isEnable());
                     appView.setDefaultTextColor(Color.WHITE);
 
-                    registerForContextMenu(appView);
+                    appView.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
+                        @Override
+                        public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+                            menu.add(0, 1, 0, "删除图标");
+                            menu.add(0, 2, 0, "应用信息");
+                            menu.add(0, 3, 0, "卸载");
+                        }
+                    });
                     try {
-                        gridLayout.addView(appView, layoutParams);
+                        //gridMain.addView(appView, layoutParams);
+                        gridMain.addView(appView);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -144,19 +159,72 @@ public class MainActivity extends StatusBarTransparentActivity implements View.O
                 }
             }
         }.execute();
+
+        new AsyncTask<Void, Void, List<AppInfo>>() {
+            @Override
+            protected List<AppInfo> doInBackground(Void... voids) {
+                LauncherConfig config = new LauncherConfig(getApplicationContext());
+                List<String> launcherPackages = config.getLauncherBottomPackages();
+                List<AppInfo> appInfos = new ArrayList<>();
+                for (int i = 0; i < launcherPackages.size(); i++) {
+                    PackageInfo packageInfo = AppManager.getPackageActivity(getPackageManager(), launcherPackages.get(i));
+                    AppInfo appInfo = new AppInfo();
+                    appInfo.setPackageInfo(packageInfo);
+                    appInfo.setEnable(AppManager.isEnable(getApplicationContext(), packageInfo.packageName));
+                    appInfo.setPackageName(packageInfo.packageName);
+                    appInfos.add(appInfo);
+                }
+                return appInfos;
+            }
+
+            @Override
+            protected void onPostExecute(List<AppInfo> appInfos) {
+                super.onPostExecute(appInfos);
+                gridBottom.removeAllViews();
+                gridBottom.setColumnCount(5);
+                for (int i = 0; i < appInfos.size(); i++) {
+                    AppButtonView appView = new AppButtonView(getApplicationContext());
+                    gridBottom.addView(appView);
+
+                    AppInfo packageInfo = appInfos.get(i);
+                    appView.setAppInfo(packageInfo);
+                    appView.setOnClickListener(onIconClickListener);
+                    appView.setOnLongClickListener(onIconLongClickListener);
+
+                    appView.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
+                        @Override
+                        public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+                            menu.add(0, 4, 0, "删除导航");
+                            menu.add(0, 5, 0, "应用信息");
+                        }
+                    });
+                }
+                System.out.println();
+
+                AppButtonView child = new AppButtonView(getApplicationContext());
+                gridBottom.addView(child, gridBottom.getChildCount() / 2);
+
+                child.setImageResource(R.mipmap.ic_allapps_color);
+                child.setBackgroundColor(Color.TRANSPARENT);
+                child.setOnClickListener(MainActivity.this);
+                child.setClickable(true);
+                child.setFocusable(true);
+                child.setId(R.id.main_allapps);
+            }
+        }.execute();
     }
 
     public View.OnClickListener onIconClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            final AppView view = (AppView) v;
-            if (!view.open()) {
+            final AppHelper appHelper = (AppHelper) v;
+            if (!appHelper.open()) {
                 Toast.makeText(MainActivity.this, "打开失败", Toast.LENGTH_SHORT).show();
-                if (view.enable()) {
+                if (appHelper.enable()) {
                     handler.postDelayed(new Runnable() {
                         @Override
                         public void run() {
-                            if (!view.open()) {
+                            if (!appHelper.open()) {
                                 Toast.makeText(MainActivity.this, "第二次打开失败", Toast.LENGTH_SHORT).show();
                             }
                         }
@@ -171,7 +239,7 @@ public class MainActivity extends StatusBarTransparentActivity implements View.O
         @Override
         public boolean onLongClick(View v) {
             v.showContextMenu();
-            mFocusChild = (AppView) v;
+            mFocusChild = (AppTextView) v;
             return true;
         }
     };

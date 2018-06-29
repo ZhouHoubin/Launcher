@@ -4,13 +4,13 @@ import android.app.LoaderManager;
 import android.content.AsyncTaskLoader;
 import android.content.Loader;
 import android.content.pm.PackageInfo;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.view.ContextMenu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.GridLayout;
 import android.widget.Toast;
 
@@ -20,15 +20,14 @@ import java.util.List;
 import z.houbin.launcher.pkg.AppInfo;
 import z.houbin.launcher.pkg.AppManager;
 import z.houbin.launcher.screen.LauncherConfig;
-import z.houbin.launcher.ui.AppView;
+import z.houbin.launcher.ui.AppHelper;
+import z.houbin.launcher.ui.AppTextView;
 import z.houbin.launcher.ui.StatusBarTransparentActivity;
-import z.houbin.launcher.util.ACache;
-import z.houbin.launcher.util.Caches;
 
 public class AppListActivity extends StatusBarTransparentActivity implements LoaderManager.LoaderCallbacks<List<AppInfo>> {
     private GridLayout gridLayout;
 
-    private AppView mFocusChild;
+    private AppTextView mFocusChild;
 
     private Handler handler = new Handler();
 
@@ -49,22 +48,26 @@ public class AppListActivity extends StatusBarTransparentActivity implements Loa
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
         super.onCreateContextMenu(menu, v, menuInfo);
         menu.add(0, 1, 0, "添加到桌面");
-        menu.add(0, 2, 0, "应用信息");
-        menu.add(0, 3, 0, "卸载");
+        menu.add(0, 2, 0, "添加到导航");
+        menu.add(0, 3, 0, "应用信息");
+        menu.add(0, 4, 0, "卸载");
     }
 
     @Override
     public boolean onContextItemSelected(MenuItem item) {
         if (mFocusChild != null) {
+            LauncherConfig config = new LauncherConfig(getApplicationContext());
             switch (item.getItemId()) {
                 case 1:
-                    LauncherConfig config = new LauncherConfig(getApplicationContext());
                     config.addToLauncher(mFocusChild.getPackageName());
                     break;
                 case 2:
-                    mFocusChild.gotoDetailActivity();
+                    config.addToLauncherBottom(mFocusChild.getPackageName());
                     break;
                 case 3:
+                    mFocusChild.gotoDetail();
+                    break;
+                case 4:
                     mFocusChild.uninstall();
                     break;
             }
@@ -76,14 +79,14 @@ public class AppListActivity extends StatusBarTransparentActivity implements Loa
     public View.OnClickListener onIconClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            final AppView view = (AppView) v;
-            if (!view.open()) {
+            final AppHelper appHelper = (AppHelper) v;
+            if (!appHelper.open()) {
                 Toast.makeText(AppListActivity.this, "打开失败", Toast.LENGTH_SHORT).show();
-                if (view.enable()) {
+                if (appHelper.enable()) {
                     handler.postDelayed(new Runnable() {
                         @Override
                         public void run() {
-                            if (!view.open()) {
+                            if (!appHelper.open()) {
                                 Toast.makeText(AppListActivity.this, "第二次打开失败", Toast.LENGTH_SHORT).show();
                             }
                         }
@@ -98,7 +101,7 @@ public class AppListActivity extends StatusBarTransparentActivity implements Loa
         @Override
         public boolean onLongClick(View v) {
             v.showContextMenu();
-            mFocusChild = (AppView) v;
+            mFocusChild = (AppTextView) v;
             return true;
         }
     };
@@ -133,8 +136,12 @@ public class AppListActivity extends StatusBarTransparentActivity implements Loa
     public void onLoadFinished(Loader<List<AppInfo>> loader, List<AppInfo> data) {
         gridLayout.removeAllViews();
         gridLayout.setRowCount((data.size() / 4) + 1);
+        gridLayout.setColumnCount(4);
+
+        int childWidth = ((ViewGroup)gridLayout.getParent()).getMeasuredWidth() / gridLayout.getColumnCount();
+
         for (int i = 0; i < data.size(); i++) {
-            AppView appView = new AppView(getApplicationContext());
+            AppTextView appView = new AppTextView(getApplicationContext());
 
             GridLayout.Spec rowSpec = GridLayout.spec(i / 4, 1f);
             GridLayout.Spec columnSpec = GridLayout.spec(i % 4, 1f);
@@ -146,7 +153,7 @@ public class AppListActivity extends StatusBarTransparentActivity implements Loa
             AppInfo packageInfo = data.get(i);
 
             appView.setText(packageInfo.getPackageInfo().applicationInfo.loadLabel(getPackageManager()));
-            appView.setTop(packageInfo.getPackageInfo().applicationInfo.loadIcon(getPackageManager()), 100, 100);
+            appView.setTop(packageInfo.getPackageInfo().applicationInfo.loadIcon(getPackageManager()), childWidth / 2, childWidth / 2);
             appView.setAppInfo(packageInfo);
             appView.setOnClickListener(onIconClickListener);
             appView.setOnLongClickListener(onIconLongClickListener);
