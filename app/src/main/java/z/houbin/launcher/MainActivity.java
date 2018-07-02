@@ -1,10 +1,9 @@
 package z.houbin.launcher;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
-import android.graphics.Bitmap;
 import android.graphics.Color;
-import android.graphics.drawable.BitmapDrawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -13,8 +12,8 @@ import android.view.ContextMenu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
@@ -31,12 +30,13 @@ import z.houbin.launcher.ui.GridLinearLayout;
 import z.houbin.launcher.ui.StatusBarTransparentActivity;
 import z.houbin.launcher.ui.WallpaperUtil;
 
+@SuppressLint("StaticFieldLeak")
 public class MainActivity extends StatusBarTransparentActivity implements View.OnClickListener {
     private GridLinearLayout gridBottom, gridMain;
 
     private Handler handler = new Handler();
 
-    private AppTextView mFocusChild;
+    private AppHelper mFocusChild;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,6 +88,10 @@ public class MainActivity extends StatusBarTransparentActivity implements View.O
                     mFocusChild.uninstall();
                     break;
                 case 4:
+                    LauncherConfig config2 = new LauncherConfig(getApplicationContext());
+                    config2.deleteFromLauncherBottom(mFocusChild.getPackageName());
+                    onResume();
+                    mFocusChild = null;
                     break;
                 case 5:
                     mFocusChild.gotoDetail();
@@ -124,7 +128,7 @@ public class MainActivity extends StatusBarTransparentActivity implements View.O
                 gridMain.removeAllViews();
                 gridMain.setColumnCount(4);
 
-                int childWidth = ((ViewGroup)gridMain.getParent()).getMeasuredWidth() / gridMain.getColumnCount();
+                int childWidth = ((ViewGroup) gridMain.getParent()).getMeasuredWidth() / gridMain.getColumnCount();
 
                 for (int i = 0; i < data.size(); i++) {
                     AppTextView appView = new AppTextView(getApplicationContext());
@@ -150,7 +154,6 @@ public class MainActivity extends StatusBarTransparentActivity implements View.O
                         }
                     });
                     try {
-                        //gridMain.addView(appView, layoutParams);
                         gridMain.addView(appView);
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -199,10 +202,12 @@ public class MainActivity extends StatusBarTransparentActivity implements View.O
                         }
                     });
                 }
-                System.out.println();
 
                 AppButtonView child = new AppButtonView(getApplicationContext());
-                gridBottom.addView(child, gridBottom.getChildCount() / 2);
+                for (int i = 0; i < 5 - gridBottom.getChildCount(); i++) {
+                    gridBottom.addView(new TextView(getApplicationContext()));
+                }
+                gridBottom.addView(child, 2);
 
                 child.setImageResource(R.mipmap.ic_allapps_color);
                 child.setBackgroundColor(Color.TRANSPARENT);
@@ -239,7 +244,7 @@ public class MainActivity extends StatusBarTransparentActivity implements View.O
         @Override
         public boolean onLongClick(View v) {
             v.showContextMenu();
-            mFocusChild = (AppTextView) v;
+            mFocusChild = (AppHelper) v;
             return true;
         }
     };
