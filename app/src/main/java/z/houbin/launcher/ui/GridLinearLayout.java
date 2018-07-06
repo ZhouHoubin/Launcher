@@ -1,6 +1,9 @@
 package z.houbin.launcher.ui;
 
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.View;
@@ -21,10 +24,12 @@ public class GridLinearLayout extends LinearLayout {
 
     public GridLinearLayout(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
+        setWillNotDraw(false);
     }
 
     public GridLinearLayout(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
+        setWillNotDraw(false);
     }
 
     @Override
@@ -49,14 +54,14 @@ public class GridLinearLayout extends LinearLayout {
             super.onMeasure(childWidthMeasureSpec, childHeightMeasureSpec);
             return;
         }
-        childWidth = getMeasuredWidth()/getColumnCount();
+        childWidth = getMeasuredWidth() / getColumnCount();
         childHeight = childWidth;
         for (int i = 0; i < count; i++) {
             final View child = getChildAt(i);
             if (child.getVisibility() == GONE) {
                 continue;
             }
-            child.measure(childWidth,childHeight);
+            child.measure(childWidth, childHeight);
             //childWidth = child.getMeasuredWidth();
             //childHeight = child.getMeasuredHeight();
         }
@@ -64,10 +69,10 @@ public class GridLinearLayout extends LinearLayout {
         int height = childHeight * getRowCount();
 
         //setMeasuredDimension(resolveSize(width, widthMeasureSpec), resolveSize(height, heightMeasureSpec));
-        setMeasuredDimension(width,height);
+        setMeasuredDimension(width, height);
     }
 
-    private int margin = 5;
+    private int margin = 0;
     private int marginTop = margin * 5;
 
     @Override
@@ -101,6 +106,39 @@ public class GridLinearLayout extends LinearLayout {
 
             }
             top += gridH + marginTop;
+        }
+    }
+
+    private Paint linePaint = new Paint();
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+        linePaint.setColor(Color.WHITE);
+        linePaint.setStrokeWidth(4);
+
+        for (int i = 0; i <= getRowCount(); i++) {
+            int y = 0;
+            if (i == 0) {
+                y += linePaint.getStrokeWidth() / 2;
+            } else if (i == getRowCount()) {
+                y = (int) (getHeight() - linePaint.getStrokeWidth() / 2);
+            } else {
+                y = getHeight() / getRowCount() * i;
+            }
+            canvas.drawLine(0, y, getWidth(), y, linePaint);
+        }
+
+        for (int j = 0; j <= getColumnCount(); j++) {
+            int x = 0;
+            if (j == 0) {
+                x += linePaint.getStrokeWidth() / 2;
+            } else if (j == getColumnCount()) {
+                x = (int) (getWidth() - (linePaint.getStrokeWidth() / 2));
+            } else {
+                x = getWidth() / getColumnCount() * j;
+            }
+            canvas.drawLine(x, 0, x, getHeight(), linePaint);
         }
     }
 

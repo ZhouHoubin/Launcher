@@ -1,9 +1,11 @@
 package z.houbin.launcher;
 
+import android.annotation.SuppressLint;
 import android.app.LoaderManager;
 import android.content.AsyncTaskLoader;
 import android.content.Loader;
 import android.content.pm.PackageInfo;
+import android.content.pm.ResolveInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.Nullable;
@@ -13,6 +15,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.GridLayout;
 import android.widget.Toast;
+
+import org.json.JSONArray;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -106,22 +110,25 @@ public class AppListActivity extends StatusBarTransparentActivity implements Loa
         }
     };
 
+    @SuppressLint("StaticFieldLeak")
     @Override
     public Loader<List<AppInfo>> onCreateLoader(int id, Bundle args) {
         return new AsyncTaskLoader<List<AppInfo>>(getApplicationContext()) {
             @Override
             public List<AppInfo> loadInBackground() {
-                List<PackageInfo> thirdPackage = AppManager.getThirdPackage(getPackageManager());
                 List<AppInfo> appInfos = new ArrayList<>();
-                for (int i = 0; i < thirdPackage.size(); i++) {
-                    PackageInfo packageInfo = thirdPackage.get(i);
-                    AppInfo appInfo = new AppInfo();
-                    appInfo.setPackageInfo(packageInfo);
-                    appInfo.setEnable(AppManager.isEnable(getApplicationContext(), packageInfo.packageName));
-                    appInfo.setPackageName(packageInfo.packageName);
-                    appInfos.add(appInfo);
-                }
-                return appInfos;
+//                List<PackageInfo> thirdPackage = AppManager.getInstallPackages(getPackageManager());
+//                for (int i = 0; i < thirdPackage.size(); i++) {
+//                    PackageInfo packageInfo = thirdPackage.get(i);
+//                    AppInfo appInfo = new AppInfo();
+//                    appInfo.setPackageInfo(packageInfo);
+//                    appInfo.setEnable(AppManager.isEnable(getApplicationContext(), packageInfo.packageName));
+//                    appInfo.setPackageName(packageInfo.packageName);
+//                    appInfos.add(appInfo);
+//                    System.out.println(packageInfo.packageName + "----" + packageInfo.applicationInfo.loadLabel(getPackageManager()));
+//                }
+                List<AppInfo> thirdPackage = AppManager.getAvaiablePackages(getPackageManager());
+                return thirdPackage;
             }
 
             @Override
@@ -138,7 +145,7 @@ public class AppListActivity extends StatusBarTransparentActivity implements Loa
         gridLayout.setRowCount((data.size() / 4) + 1);
         gridLayout.setColumnCount(4);
 
-        int childWidth = ((ViewGroup)gridLayout.getParent()).getMeasuredWidth() / gridLayout.getColumnCount();
+        int childWidth = ((ViewGroup) gridLayout.getParent()).getMeasuredWidth() / gridLayout.getColumnCount();
 
         for (int i = 0; i < data.size(); i++) {
             AppTextView appView = new AppTextView(getApplicationContext());
@@ -157,9 +164,10 @@ public class AppListActivity extends StatusBarTransparentActivity implements Loa
             appView.setAppInfo(packageInfo);
             appView.setOnClickListener(onIconClickListener);
             appView.setOnLongClickListener(onIconLongClickListener);
-            appView.setEnabled(packageInfo.isEnable());
+            appView.setEnabled(packageInfo.isEnabled());
 
             registerForContextMenu(appView);
+
             try {
                 gridLayout.addView(appView, layoutParams);
             } catch (Exception e) {

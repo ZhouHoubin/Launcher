@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.net.Uri;
 
 import java.io.DataOutputStream;
@@ -13,6 +14,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 public class AppManager {
@@ -154,6 +156,54 @@ public class AppManager {
         return thirdPackages;
     }
 
+    public static List<PackageInfo> getInstallPackages(PackageManager manager) {
+        List<PackageInfo> thirdPackages = new ArrayList<>();
+        List<PackageInfo> installedPackages = manager.getInstalledPackages(PackageManager.GET_ACTIVITIES | PackageManager.MATCH_DISABLED_COMPONENTS);
+        for (PackageInfo installedPackage : installedPackages) {
+            if (installedPackage.activities != null) {
+                thirdPackages.add(installedPackage);
+            }
+            if (manager.getLaunchIntentForPackage(installedPackage.packageName) != null) {
+
+            }
+        }
+        //thirdPackages.addAll(installedPackages);
+        return thirdPackages;
+    }
+
+    public static List<AppInfo> getAvaiablePackages(PackageManager manager) {
+        Intent resolveIntent = new Intent(Intent.ACTION_MAIN, null);
+        resolveIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+
+        List<ResolveInfo> resolveInfoList = manager.queryIntentActivities(resolveIntent, PackageManager.MATCH_DISABLED_COMPONENTS);
+
+        HashMap<String, String> keyMap = new HashMap<>();
+
+        List<AppInfo> appInfoList = new ArrayList<>();
+
+        for (ResolveInfo resolveInfo : resolveInfoList) {
+            AppInfo info = new AppInfo();
+            info.setPackageName(resolveInfo.activityInfo.packageName);
+            info.setEnabled(isEnable(manager, info.getPackageName()));
+            info.setActivityInfo(resolveInfo.activityInfo);
+            PackageInfo packageInfo = getPackageActivity(manager, info.getPackageName());
+            if (packageInfo != null) {
+                info.setIcon(packageInfo.applicationInfo.loadIcon(manager));
+                info.setName(packageInfo.applicationInfo.loadLabel(manager).toString());
+            } else {
+                info.setIcon(resolveInfo.loadIcon(manager));
+                info.setName(resolveInfo.loadLabel(manager).toString());
+            }
+            info.setPackageInfo(packageInfo);
+            if (!keyMap.containsKey(info.getPackageName())) {
+                appInfoList.add(info);
+                keyMap.put(info.getPackageName(), null);
+            }
+        }
+
+        return appInfoList;
+    }
+
     public static PackageInfo getPackageActivity(PackageManager manager, String packageName) {
         try {
             return manager.getPackageInfo(packageName, PackageManager.GET_ACTIVITIES | PackageManager.MATCH_DISABLED_COMPONENTS);
@@ -181,9 +231,8 @@ public class AppManager {
         }
     }
 
-    public static boolean isEnable(Context context, String packageName) {
-        PackageManager packageManager = context.getPackageManager();
-        Intent launchIntentForPackage = packageManager.getLaunchIntentForPackage(packageName);
+    public static boolean isEnable(PackageManager manager, String packageName) {
+        Intent launchIntentForPackage = manager.getLaunchIntentForPackage(packageName);
         return launchIntentForPackage != null;
     }
 

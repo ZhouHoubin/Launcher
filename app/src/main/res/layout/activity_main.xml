@@ -22,7 +22,7 @@
     <z.houbin.launcher.ui.GridLinearLayout
         android:id="@+id/main_bottom"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="65dp"
         android:layout_alignParentBottom="true"
         android:minHeight="65dp"
         android:orientation="horizontal"

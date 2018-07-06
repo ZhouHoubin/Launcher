@@ -115,7 +115,7 @@ public class MainActivity extends StatusBarTransparentActivity implements View.O
                     PackageInfo packageInfo = AppManager.getPackageActivity(getPackageManager(), launcherPackages.get(i));
                     AppInfo appInfo = new AppInfo();
                     appInfo.setPackageInfo(packageInfo);
-                    appInfo.setEnable(AppManager.isEnable(getApplicationContext(), packageInfo.packageName));
+                    appInfo.setEnabled(AppManager.isEnable(getPackageManager(), packageInfo.packageName));
                     appInfo.setPackageName(packageInfo.packageName);
                     appInfos.add(appInfo);
                 }
@@ -142,13 +142,13 @@ public class MainActivity extends StatusBarTransparentActivity implements View.O
                     appView.setAppInfo(packageInfo);
                     appView.setOnClickListener(onIconClickListener);
                     appView.setOnLongClickListener(onIconLongClickListener);
-                    appView.setEnabled(packageInfo.isEnable());
+                    appView.setEnabled(packageInfo.isEnabled());
                     appView.setDefaultTextColor(Color.WHITE);
 
                     appView.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
                         @Override
                         public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
-                            menu.add(0, 1, 0, "删除图标");
+                            menu.add(0, 1, 0, "移除");
                             menu.add(0, 2, 0, "应用信息");
                             menu.add(0, 3, 0, "卸载");
                         }
@@ -173,7 +173,7 @@ public class MainActivity extends StatusBarTransparentActivity implements View.O
                     PackageInfo packageInfo = AppManager.getPackageActivity(getPackageManager(), launcherPackages.get(i));
                     AppInfo appInfo = new AppInfo();
                     appInfo.setPackageInfo(packageInfo);
-                    appInfo.setEnable(AppManager.isEnable(getApplicationContext(), packageInfo.packageName));
+                    appInfo.setEnabled(AppManager.isEnable(getPackageManager(), packageInfo.packageName));
                     appInfo.setPackageName(packageInfo.packageName);
                     appInfos.add(appInfo);
                 }
@@ -197,16 +197,17 @@ public class MainActivity extends StatusBarTransparentActivity implements View.O
                     appView.setOnCreateContextMenuListener(new View.OnCreateContextMenuListener() {
                         @Override
                         public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
-                            menu.add(0, 4, 0, "删除导航");
+                            menu.add(0, 4, 0, "移除");
                             menu.add(0, 5, 0, "应用信息");
                         }
                     });
                 }
 
                 AppButtonView child = new AppButtonView(getApplicationContext());
-                for (int i = 0; i < 5 - gridBottom.getChildCount(); i++) {
+                for (int i = 0; i < gridBottom.getColumnCount() - gridBottom.getChildCount() - 1; i++) {
                     gridBottom.addView(new TextView(getApplicationContext()));
                 }
+
                 gridBottom.addView(child, 2);
 
                 child.setImageResource(R.mipmap.ic_allapps_color);

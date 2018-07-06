@@ -1,11 +1,49 @@
 package z.houbin.launcher.pkg;
 
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
+import android.graphics.drawable.Drawable;
 
 public class AppInfo {
-    private boolean enable;
+    private String name;
+    private Drawable icon;
+    private boolean system;
+    private boolean enabled;
     private String packageName;
     private PackageInfo packageInfo;
+    private ActivityInfo activityInfo;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Drawable getIcon() {
+        return icon;
+    }
+
+    public void setIcon(Drawable icon) {
+        this.icon = icon;
+    }
+
+    public boolean isSystem() {
+        return system;
+    }
+
+    public void setSystem(boolean system) {
+        this.system = system;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
 
     public String getPackageName() {
         return packageName;
@@ -23,11 +61,11 @@ public class AppInfo {
         this.packageInfo = packageInfo;
     }
 
-    public boolean isEnable() {
-        return enable;
+    public ActivityInfo getActivityInfo() {
+        return activityInfo;
     }
 
-    public void setEnable(boolean enable) {
-        this.enable = enable;
+    public void setActivityInfo(ActivityInfo activityInfo) {
+        this.activityInfo = activityInfo;
     }
 }

@@ -2,8 +2,10 @@ package z.houbin.launcher.ui;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
@@ -50,11 +52,7 @@ public class AppTextView extends AppCompatTextView implements AppHelper {
     }
 
     public boolean open() {
-        if (this.appInfo != null) {
-            return AppManager.openApp(getContext(), appInfo.getPackageName());
-        } else {
-            return false;
-        }
+        return this.appInfo != null && AppManager.openApp(getContext(), appInfo.getPackageName());
     }
 
     public boolean disable() {
